@@ -79,7 +79,10 @@ avg.enrollment <- final.data %>%
   summarise(avg_all_enroll = mean(all_enroll))
 
 fig.avg.enrollment_plot <- avg.enrollment %>%
-  ggplot(aes(x = factor(year), y = avg_all_enroll)) + geom_col() +
+  ggplot(aes(x = factor(year), y = avg_all_enroll)) + 
+  geom_col(fill = "dodgerblue4", alpha = 0.75) +
+  geom_text(label = round(avg.enrollment$avg_all_enroll,2),
+            vjust = -0.5, size = 3, check_overlap = TRUE) +
   labs(x = "Year", y = "Average Enrollment", title = "Average Number of Medicare Advantage Enrollees per County from 2007 to 2015") +
   theme_bw() + theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank()) +
   theme(
@@ -90,12 +93,15 @@ fig.avg.enrollment_plot <- avg.enrollment %>%
     axis.text = element_text(size = 10, color = "black"))
 
 avg.premium <- final.data %>% ungroup() %>%
-  select(year, premium) %>% drop_na() %>%
-  group_by(year) %>% summarise(avg_prem = mean(premium))
+  select(planid, year, premium) %>% drop_na() %>%
+  group_by(year) %>% 
+  summarise(avg_prem = mean(premium))
 
 fig.avg.premium.plot <- avg.premium %>% 
-  ggplot(aes(x = year, y = avg_prem)) + geom_point() + geom_line() +
-  scale_x_continuous(breaks = c(2007:2015)) +
+  ggplot(aes(x = factor(year), y = avg_prem)) + 
+  geom_col(fill = "dodgerblue4", alpha = 0.75) +
+  geom_text(label = round(avg.premium$avg_prem,2),
+            vjust = -0.5, size = 3, check_overlap = TRUE) +
   labs(x = "Year", y = "Average Premium", title = "Average Premium from 2007 to 2015") +
   theme_bw() + theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank()) +
   theme(
@@ -105,14 +111,26 @@ fig.avg.premium.plot <- avg.premium %>%
     axis.title = element_text(size = 10, color = "black"),
     axis.text = element_text(size = 10, color = "black"))
 
-zero.prem.plan <- final.data %>%
+zero.prem.plan <- final.data %>% ungroup() %>%
   select(planid, year, premium) %>% drop_na() %>%
-  group_by(year) %>% summarise(zero_ct = n_distinct(planid[premium == 0]), ct = n_distinct(planid), pct = zero_ct/ct*100)
+  group_by(year) %>% 
+  summarise(zero_ct = n_distinct(planid[premium == 0]),
+            ct = n_distinct(planid),
+            pct = zero_ct/ct*100)
 
-fig.zero.prem.plan.plot <- zero.prem.plan %>% filter(year > 2007) %>%
-  ggplot(aes(x = year, y = pct)) + geom_point() + geom_line() +
+scale <- 0.4
+zero.prem.plan.plot <- zero.prem.plan %>% pivot_longer(c(zero_ct, ct), names_to = "Count", values_to = "Value")
+fig.zero.prem.plan.plot <- zero.prem.plan.plot %>%
+  ggplot(aes(x = year)) +
+  geom_col(aes(y = Value, fill = Count), alpha = 0.75, position="dodge") +
+  geom_point(aes(y = pct/scale)) + geom_line(aes(y = pct/scale)) +
+  geom_text(aes(y = pct/scale), label = round(zero.prem.plan.plot$pct,2),
+            vjust = -0.5, size = 3, color = "black", check_overlap = TRUE) +
+  scale_fill_manual(values = c("dodgerblue4", "dodgerblue1"), labels = c("Total", "Zero Premium")) +
   scale_x_continuous(breaks = c(2007:2015)) +
-  labs(x = "Year", y = "% of $0 Premium Plans", title = "Percentage of $0 Premium Plans from 2008 to 2015") +
+  scale_y_continuous(name = "Count of Plans", 
+                     sec.axis = sec_axis(~.*scale, name="% of $0 Premium Plans")) +
+  labs(x = "Year", title = "Percentage of $0 Premium Plans from 2007 to 2015") +
   theme_bw() + theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank()) +
   theme(
     plot.title = element_text(size = 12, color = "black", hjust = 0.5),
@@ -121,7 +139,11 @@ fig.zero.prem.plan.plot <- zero.prem.plan %>% filter(year > 2007) %>%
     axis.title = element_text(size = 10, color = "black"),
     axis.text = element_text(size = 10, color = "black"))
 
-## Save data for markdown -------------------------------------------------
+## Save data for markdown ------------------------------------------------------
 
 rm(list=c("full.ma.data", "plan.premiums", "contract.service.area", "ma.penetration.data", "final.data"))
 save.image("Hwk1_workspace.Rdata")
+
+geom_text(aes(y = Value), label = round(zero.prem.plan.plot$Value,2),
+          position = position_dodge2(width=0.9, preserve='single'),
+          vjust = 2, size = 3, color = "black", check_overlap = TRUE) +
