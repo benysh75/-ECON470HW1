@@ -143,7 +143,3 @@ fig.zero.prem.plan.plot <- zero.prem.plan.plot %>%
 
 rm(list=c("full.ma.data", "plan.premiums", "contract.service.area", "ma.penetration.data", "final.data"))
 save.image("Hwk1_workspace.Rdata")
-
-geom_text(aes(y = Value), label = round(zero.prem.plan.plot$Value,2),
-          position = position_dodge2(width=0.9, preserve='single'),
-          vjust = 2, size = 3, color = "black", check_overlap = TRUE) +
